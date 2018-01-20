@@ -51,6 +51,7 @@ insert' (x:xs) val tree = Node (nodeVal tree) inserted
                                  next     = fromMaybe Empty $ Map.lookup x map
                                  inserted = Map.insert x (insert' xs val next) map
 
+-- this will *ALWAYS* recurse until hitting [], which kinda sucks
 lookup :: String -> Trie a -> Maybe a
 lookup []     tree = nodeVal tree
 lookup (x:xs) tree = Trie.lookup xs $ fromMaybe Empty $ Map.lookup x $ nodeMap tree

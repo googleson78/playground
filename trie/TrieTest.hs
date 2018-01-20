@@ -1,7 +1,11 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 import Trie (Trie(..))
 import qualified Trie as T
 import Test.QuickCheck
+import Test.QuickCheck.All
 import Data.Map.Lazy
+import Data.Maybe
 
 instance (Arbitrary a) => Arbitrary (Trie a) where
     arbitrary = do
@@ -18,5 +22,13 @@ arbitraryTrie m = do
     vals <- vectorOf n $ arbitraryTrie $ m `div` 4
     return (Node ma (fromList $ zip keys vals))
 
-prop_insert :: (Eq a) => String -> a -> Trie a -> Bool
-prop_insert key val trie = (T.lookup key $ T.insert key val trie) == (Just val)
+
+prop_insertWorks :: (Eq a) => String -> a -> Trie a -> Bool
+prop_insertWorks key val trie = (T.lookup key $ T.insert key val trie) == (Just val)
+
+prop_emptyTrieIsEmpty :: String -> Bool
+prop_emptyTrieIsEmpty key = isNothing $ T.lookup key Empty
+
+return []
+
+test = $quickCheckAll

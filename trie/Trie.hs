@@ -3,6 +3,7 @@ module Trie
     , insert
     , insert'
     , Trie.lookup
+    , contains
     ) where
 
 import Data.Map.Lazy (Map)
@@ -55,3 +56,6 @@ insert' (x:xs) val tree = Node (nodeVal tree) inserted
 lookup :: String -> Trie a -> Maybe a
 lookup []     tree = nodeVal tree
 lookup (x:xs) tree = Trie.lookup xs $ fromMaybe Empty $ Map.lookup x $ nodeMap tree
+
+contains :: (Eq a) => String -> a -> Trie a -> Bool
+contains key val tree = (Trie.lookup key tree) == (Just val)

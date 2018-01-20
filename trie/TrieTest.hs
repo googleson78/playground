@@ -28,7 +28,7 @@ arbitraryTrie m = do
 -- depends on insert working and vice versa
 -- for the test to be valid
 prop_contains :: (Eq a) => String -> a -> Trie a -> Bool
-prop_contains key val trie = T.contains key val $ T.insert key val trie
+prop_contains key val = T.contains key val . T.insert key val 
 
 -- testing if lookup in an empty Trie fails
 prop_emptyTrieIsEmpty :: String -> Bool

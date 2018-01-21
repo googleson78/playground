@@ -58,9 +58,6 @@ prop_insertion' keys vals trie = (not $ duplicate keys) ==> all (==True) contain
           duplicate []     = False
           duplicate (x:xs) = elem x xs || duplicate xs
 
---insertZip :: Trie a -> (String, a) ->  Trie a
---insertZip trie (key, val) = T.insert key val trie
-
 return []
 
 test = $quickCheckAll

@@ -2,8 +2,6 @@ module Det
     (det) 
     where
 
-import Data.Monoid
-
 -- counts the inversions of a list
 -- in the most "wooden" way possible
 -- (using the definition)
@@ -16,9 +14,9 @@ countinv (x:xs) = (length $ filter (<x) xs) + countinv xs
 -- a permutation of (x:xs) is inserting
 -- x at every possible "spot", and that is
 -- for each permutation of xs
-perm :: [a] -> [[a]]
-perm [] = [[]]
-perm (x:xs) = concat $ map (insertAtAllPlaces x) $ perm xs
+permute :: [a] -> [[a]]
+permute [] = [[]]
+permute (x:xs) = concat $ map (insertAtAllPlaces x) $ permute xs
 
 insertAtAllPlaces :: a -> [a] -> [[a]]
 insertAtAllPlaces x [] = [[x]]
@@ -26,10 +24,11 @@ insertAtAllPlaces x ys = zipWith (insertAt x) [0..m] yss
                            where m = length ys + 1
                                  yss = replicate m ys
 
--- as required by perm
+-- as required by permute
 insertAt :: a -> Int -> [a] -> [a]
 insertAt x 0 ys     = x:ys
 insertAt x n (y:ys) = y:(insertAt x (n - 1) ys)
+insertAt _ _ _ = undefined
 
 -- purely mechanical thing required for dets 
 -- when making a single product of the sum of the entire det
@@ -42,7 +41,7 @@ takePermInd = zipWith (flip (!!))
 det :: [[Int]] -> Int
 det xss = sum permProducts 
                 where n = length xss
-                      numberPerms = perm [0..(n - 1)]
+                      numberPerms = permute [0..(n - 1)]
 
                       singleProdFormula = (\ perm ->
                                           ((-1) ^ (countinv perm)) *

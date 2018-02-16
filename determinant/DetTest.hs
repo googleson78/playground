@@ -2,7 +2,6 @@
 
 import Det
 import Test.QuickCheck
-import Test.QuickCheck.All
 
 newtype SquareM = Sq [[Int]] deriving (Show)
 

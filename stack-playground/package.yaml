@@ -9,12 +9,15 @@ description:         ex nihilo
 
 dependencies:
 - base >= 4.7 && < 5
+- threepenny-gui
+- stm
+- containers
 
 library:
   source-dirs: src
 
 executables:
-  stack-playground-exe:
+  main:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -25,7 +28,7 @@ executables:
     - stack-playground
 
 tests:
-  stack-playground-test:
+  tests:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:

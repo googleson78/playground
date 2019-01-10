@@ -44,6 +44,23 @@ instance ToJSON RecordsTest where
 instance FromJSON RecordsTest where
     parseJSON = genericParseJSON rtOpts
 
+data SingleConstrRecordTest =
+    SingleConstrRecordTest
+        { scrtA :: Text
+        }
+    deriving (Show, Eq, Generic)
+
+scrtOpts :: Options
+scrtOpts = defaultOptions { fieldLabelModifier = process
+                          , unwrapUnaryRecords = True}
+    where process (x:y:z:q:w:xs) = Data.Char.toLower w : xs
+
+instance ToJSON SingleConstrRecordTest where
+    toJSON = genericToJSON scrtOpts
+
+instance FromJSON SingleConstrRecordTest where
+    parseJSON = genericParseJSON scrtOpts
+
 a = Paths ["/lolJK/kek", "najs, aaaa"]
 
 asdf' :: Value

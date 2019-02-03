@@ -28,7 +28,7 @@ isJustGADT NothingGADT = False
 isJustGADT (JustGADT _) = True
 
 -- now to do finite lists
--- we want to encode the length of a list in it's type
+-- we want to encode the length of a list in its type
 -- for that we need type level natural numbers
 -- the same way natural numbers are just
 -- 1) the number zero
@@ -49,7 +49,7 @@ type Five = Succ (Succ (Succ (Succ (Succ Zero))))
 -- now for our finite lists
 -- other than the type which they hold - a, we will also want to have
 -- information about their length in the type
--- so it's only natural that
+-- so its only natural that
 -- 1) the empty list (Nil) has length Zero
 -- 2) our inductive case (Cons) increases the length by one
 -- in other words if we want to cons to a Vector of length n

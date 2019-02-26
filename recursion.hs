@@ -7,7 +7,6 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
 
 import GHC.TypeLits (Nat, type (+), type (-), type (<=), KnownNat, natVal)
 import GHC.Exts (IsList(fromList, type Item))

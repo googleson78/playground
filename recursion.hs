@@ -18,7 +18,8 @@ import Data.Foldable (toList)
 
 import Unsafe.Coerce
 
-import Data.Reflection (reifyNat)
+import Data.Constraint ((\\), withDict)
+import Data.Constraint.Nat (plusIsCancellative, plusAssociates)
 
 data PRFun
     = Zero
@@ -31,18 +32,19 @@ data PRFun
 data PRFun1 (n :: Nat) where
     Zero1 :: PRFun1 0
     Succ1 :: PRFun1 1
-    Proj1 :: (KnownNat m, KnownNat n, m <= n) => Proxy m -> PRFun1 (n + 1)
+    Proj1 :: (KnownNat m, KnownNat n, m <= n) => Proxy m -> PRFun1 (1 + n)
     Comp1 :: (KnownNat n, KnownNat m) => PRFun1 n -> Vector n (PRFun1 m) -> PRFun1 m
     Rec1  :: (KnownNat n) => PRFun1 n -> PRFun1 (2 + n) -> PRFun1 (1 + n)
 
-interp1 :: forall n. (KnownNat n) => PRFun1 n -> Vector n Integer -> Integer
+interp1 :: forall n. PRFun1 n -> Vector n Integer -> Integer
 interp1 Zero1 _             = 0
 interp1 Succ1 (x ::: Nil)   = succ x
 interp1 (Proj1 m) v         = v !!! m
 interp1 (Comp1 f gs) v      = interp1 f $ fmap (`interp1` v) gs
-interp1 h@(Rec1 f g) (x:::xs) = if x == 0
-                              then interp1 f (unsafeCoerce xs)
-                              else interp1 g $ ((x - 1) ::: xs) <!> single ((interp1 h $ (x - 1) ::: xs))
+interp1 h@(Rec1 (f :: PRFun1 n1) g) (x:::(xs :: Vector n2 Integer))
+    = if x == 0
+      then interp1 f xs \\ plusIsCancellative @1 @n1 @n2
+      else interp1 g $ ((x - 1) ::: xs) <!> single ((interp1 h $ (x - 1) ::: xs))
 
 interp :: PRFun -> ([Int] -> Int)
 interp (Zero) = const 0
@@ -78,7 +80,7 @@ instance (KnownNat n) => IsList (Vector n a) where
     type Item (Vector n a) = a
     fromList xs
         | length xs == (fromIntegral $ natVal $ Proxy @n) = unsafeCoerce xs
-        | otherwise = error "Donτ call fromList like an idiot!"
+        | otherwise = error "Don't call fromList like an idiot!"
     toList = Data.Foldable.toList
 
 instance (KnownNat n, Show a) => Show (Vector n a) where
@@ -92,12 +94,12 @@ instance Foldable (Vector n) where
     foldr _ v Nil        = v
     foldr f v (x ::: xs) = f x $ foldr f v xs
 
-(!!!) :: (KnownNat n, KnownNat m, m <= n) => Vector (n + 1) a -> Proxy m -> a
+(!!!) :: (KnownNat n, KnownNat m, m <= n) => Vector (1 + n) a -> Proxy m -> a
 xs !!! p = toList xs !! fromInteger (natVal p)
 
-(<!>) :: (KnownNat n, KnownNat m, KnownNat k, (n + m) ~ k)
-      => Vector n a -> Vector m a -> Vector k a
-xs <!> ys = fromList $ toList xs ++ toList ys
+(<!>) :: forall n m a. Vector n a -> Vector m a -> Vector (n + m) a
+Nil                       <!> ys = ys
+(x:::(xs :: Vector n1 a)) <!> ys = withDict (plusAssociates @1 @n1 @m) $ x ::: (xs <!> ys)
 
 single :: a -> Vector 1 a
 single = (:::Nil)

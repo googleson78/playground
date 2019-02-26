@@ -21,6 +21,8 @@ import Unsafe.Coerce
 import Data.Constraint ((\\), withDict)
 import Data.Constraint.Nat (plusIsCancellative, plusAssociates)
 
+-- primitive recursive functions with no compile-time guarantees
+-- for argument counts
 data PRFun
     = Zero
     | Succ
@@ -28,40 +30,6 @@ data PRFun
     | Comp PRFun [PRFun]
     | Rec PRFun PRFun
     deriving (Eq, Show)
-
-data PRFun1 (n :: Nat) where
-    Zero1 :: forall n. PRFun1 n
-    Succ1 :: PRFun1 1
-    Proj1 :: (KnownNat m, KnownNat n, m <= n) => Proxy m -> PRFun1 (1 + n)
-    Comp1 :: (KnownNat n, KnownNat m) => PRFun1 n -> Vector n (PRFun1 m) -> PRFun1 m
-    Rec1  :: (KnownNat n) => PRFun1 n -> PRFun1 (1 + (1 + n)) -> PRFun1 (1 + n)
-
-interp1 :: forall n. PRFun1 n -> Vector n Integer -> Integer
-interp1 Zero1 _             = 0
-interp1 Succ1 (x ::: Nil)   = succ x
-interp1 (Proj1 m) v         = v !!! m
-interp1 (Comp1 f gs) v      = interp1 f $ fmap (`interp1` v) gs
-interp1 (Rec1 (f :: PRFun1 n1) _) (x:::(xs :: Vector n2 Integer))
-    | x == 0 = interp1 f xs \\ plusIsCancellative @1 @n1 @n2
-interp1 h@(Rec1 _ g) (x:::xs)
-    = interp1 g $ ((x - 1) ::: xs) `snoc` (interp1 h $ (x - 1) ::: xs)
-
-const'1 :: forall n. (KnownNat n) => PRFun1 (1 + n)
-const'1 = Proj1 (Proxy @0)
-
-plus1 :: PRFun1 2
-plus1 = Rec1 f g
-       where f = const'1
-             g = Comp1 Succ1 (single $ Proj1 $ Proxy @2)
-
-mult1 :: PRFun1 2
-mult1 = Rec1 f g
-       where f = Zero1
-             g = Comp1 plus1 (Proj1 (Proxy @1) ::: Proj1 (Proxy @2) ::: Nil)
-
-snoc :: Vector n a -> a -> Vector (1 + n) a
-snoc Nil y = single y
-snoc (x:::xs) y = x ::: snoc xs y
 
 interp :: PRFun -> ([Int] -> Int)
 interp (Zero) = const 0
@@ -87,6 +55,38 @@ mult = Rec f g
        where f = Zero
              g = Comp plus [Proj 1, Proj 2]
 
+-- primitive recursive functions with type info about
+-- argument count, allowing compile-time guarantee for argument counts
+data PRFunC (n :: Nat) where
+    ZeroC :: forall n. PRFunC n
+    SuccC :: PRFunC 1
+    ProjC :: (KnownNat m, KnownNat n, m <= n) => Proxy m -> PRFunC (1 + n)
+    CompC :: (KnownNat n, KnownNat m) => PRFunC n -> Vector n (PRFunC m) -> PRFunC m
+    RecC  :: (KnownNat n) => PRFunC n -> PRFunC (1 + (1 + n)) -> PRFunC (1 + n)
+
+interp1 :: forall n. PRFunC n -> Vector n Integer -> Integer
+interp1 ZeroC _             = 0
+interp1 SuccC (x ::: Nil)   = succ x
+interp1 (ProjC m) v         = v !!! m
+interp1 (CompC f gs) v      = interp1 f $ fmap (`interp1` v) gs
+interp1 (RecC (f :: PRFunC n1) _) (x:::(xs :: Vector n2 Integer))
+    | x == 0 = interp1 f xs \\ plusIsCancellative @1 @n1 @n2
+interp1 h@(RecC _ g) (x:::xs)
+    = interp1 g $ ((x - 1) ::: xs) `snoc` (interp1 h $ (x - 1) ::: xs)
+
+const'C :: forall n. (KnownNat n) => PRFunC (1 + n)
+const'C = ProjC (Proxy @0)
+
+plusC :: PRFunC 2
+plusC = RecC f g
+       where f = const'C
+             g = CompC SuccC (single $ ProjC $ Proxy @2)
+
+multC :: PRFunC 2
+multC = RecC f g
+       where f = ZeroC
+             g = CompC plusC (ProjC (Proxy @1) ::: ProjC (Proxy @2) ::: Nil)
+
 data Vector (n :: Nat) a where
     Nil   :: Vector 0 a
     (:::) :: a -> Vector n a -> Vector (1 + n) a
@@ -110,6 +110,10 @@ instance Functor (Vector n) where
 instance Foldable (Vector n) where
     foldr _ v Nil        = v
     foldr f v (x ::: xs) = f x $ foldr f v xs
+
+snoc :: Vector n a -> a -> Vector (1 + n) a
+snoc Nil y = single y
+snoc (x:::xs) y = x ::: snoc xs y
 
 (!!!) :: (KnownNat n, KnownNat m, m <= n) => Vector (1 + n) a -> Proxy m -> a
 xs !!! p = toList xs !! fromInteger (natVal p)

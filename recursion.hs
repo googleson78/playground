@@ -30,21 +30,38 @@ data PRFun
     deriving (Eq, Show)
 
 data PRFun1 (n :: Nat) where
-    Zero1 :: PRFun1 0
+    Zero1 :: forall n. PRFun1 n
     Succ1 :: PRFun1 1
     Proj1 :: (KnownNat m, KnownNat n, m <= n) => Proxy m -> PRFun1 (1 + n)
     Comp1 :: (KnownNat n, KnownNat m) => PRFun1 n -> Vector n (PRFun1 m) -> PRFun1 m
-    Rec1  :: (KnownNat n) => PRFun1 n -> PRFun1 (2 + n) -> PRFun1 (1 + n)
+    Rec1  :: (KnownNat n) => PRFun1 n -> PRFun1 (1 + (1 + n)) -> PRFun1 (1 + n)
 
 interp1 :: forall n. PRFun1 n -> Vector n Integer -> Integer
 interp1 Zero1 _             = 0
 interp1 Succ1 (x ::: Nil)   = succ x
 interp1 (Proj1 m) v         = v !!! m
 interp1 (Comp1 f gs) v      = interp1 f $ fmap (`interp1` v) gs
-interp1 h@(Rec1 (f :: PRFun1 n1) g) (x:::(xs :: Vector n2 Integer))
-    = if x == 0
-      then interp1 f xs \\ plusIsCancellative @1 @n1 @n2
-      else interp1 g $ ((x - 1) ::: xs) <!> single ((interp1 h $ (x - 1) ::: xs))
+interp1 (Rec1 (f :: PRFun1 n1) _) (x:::(xs :: Vector n2 Integer))
+    | x == 0 = interp1 f xs \\ plusIsCancellative @1 @n1 @n2
+interp1 h@(Rec1 _ g) (x:::xs)
+    = interp1 g $ ((x - 1) ::: xs) `snoc` (interp1 h $ (x - 1) ::: xs)
+
+const'1 :: forall n. (KnownNat n) => PRFun1 (1 + n)
+const'1 = Proj1 (Proxy @0)
+
+plus1 :: PRFun1 2
+plus1 = Rec1 f g
+       where f = const'1
+             g = Comp1 Succ1 (single $ Proj1 $ Proxy @2)
+
+mult1 :: PRFun1 2
+mult1 = Rec1 f g
+       where f = Zero1
+             g = Comp1 plus1 (Proj1 (Proxy @1) ::: Proj1 (Proxy @2) ::: Nil)
+
+snoc :: Vector n a -> a -> Vector (1 + n) a
+snoc Nil y = single y
+snoc (x:::xs) y = x ::: snoc xs y
 
 interp :: PRFun -> ([Int] -> Int)
 interp (Zero) = const 0

@@ -8,7 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
-import GHC.TypeLits (Nat, type (+), type (-), type (<=), KnownNat, natVal)
+import GHC.TypeLits (Nat, type (+), type (<=), KnownNat, natVal)
 import GHC.Exts (IsList(fromList, type Item))
 import qualified GHC.Exts as L (toList)
 import Data.Proxy (Proxy (..))
@@ -64,15 +64,16 @@ data PRFunC (n :: Nat) where
     CompC :: (KnownNat n, KnownNat m) => PRFunC n -> Vector n (PRFunC m) -> PRFunC m
     RecC  :: (KnownNat n) => PRFunC n -> PRFunC (1 + (1 + n)) -> PRFunC (1 + n)
 
-interp1 :: forall n. PRFunC n -> Vector n Integer -> Integer
-interp1 ZeroC _             = 0
-interp1 SuccC (x ::: Nil)   = succ x
-interp1 (ProjC m) v         = v !!! m
-interp1 (CompC f gs) v      = interp1 f $ fmap (`interp1` v) gs
-interp1 (RecC (f :: PRFunC n1) _) (x:::(xs :: Vector n2 Integer))
-    | x == 0 = interp1 f xs \\ plusIsCancellative @1 @n1 @n2
-interp1 h@(RecC _ g) (x:::xs)
-    = interp1 g $ ((x - 1) ::: xs) `snoc` (interp1 h $ (x - 1) ::: xs)
+-- we have inexhaustive pattern matches here, because the compiler can't figure out that the unmatched cases are not well-typed
+interpC :: forall n. PRFunC n -> Vector n Integer -> Integer
+interpC ZeroC _             = 0
+interpC SuccC (x ::: Nil)   = succ x
+interpC (ProjC m) v         = v !!! m
+interpC (CompC f gs) v      = interpC f $ fmap (`interpC` v) gs
+interpC (RecC (f :: PRFunC n1) _) (x:::(xs :: Vector n2 Integer))
+    | x == 0 = interpC f xs \\ plusIsCancellative @1 @n1 @n2
+interpC h@(RecC _ g) (x:::xs)
+    = interpC g $ ((x - 1) ::: xs) `snoc` (interpC h $ (x - 1) ::: xs)
 
 const'C :: forall n. (KnownNat n) => PRFunC (1 + n)
 const'C = ProjC (Proxy @0)
@@ -104,7 +105,7 @@ instance (KnownNat n, Show a) => Show (Vector n a) where
     show xs = (show $ natVal $ Proxy @n) ++ " [" ++ (intercalate "," $ toList $ fmap show xs) ++ "]"
 
 instance Functor (Vector n) where
-    fmap f Nil        = Nil
+    fmap _ Nil        = Nil
     fmap f (x ::: xs) = f x ::: fmap f xs
 
 instance Foldable (Vector n) where

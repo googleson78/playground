@@ -32,15 +32,15 @@ data PRFun
     deriving (Eq, Show)
 
 interp :: PRFun -> ([Int] -> Int)
-interp (Zero) = const 0
-interp (Succ) = succ . head
+interp Zero = const 0
+interp Succ = succ . head
 interp (Proj n) = (!! n)
-interp (Comp f gs) = (\xs -> let interp_gs = map interp gs
-                                 applied_gs = map ($ xs) interp_gs
-                             in  interp f $ applied_gs)
-interp h@(Rec f g) = (\(x:xs) -> if x == 0
-                                   then interp f $ xs
-                                   else interp g $ (x - 1):xs ++ [interp h $ (x - 1):xs])
+interp (Comp f gs) = \xs -> let interp_gs = map interp gs
+                                applied_gs = map ($ xs) interp_gs
+                            in  interp f applied_gs
+interp h@(Rec f g) = \(x:xs) -> if x == 0
+                                then interp f xs
+                                else interp g $ (x - 1):xs ++ [interp h $ (x - 1):xs]
 
 const' :: PRFun
 const' = Proj 0
@@ -73,7 +73,7 @@ interpC (CompC f gs) v      = interpC f $ fmap (`interpC` v) gs
 interpC (RecC (f :: PRFunC n1) _) (x:::(xs :: Vector n2 Integer))
     | x == 0 = interpC f xs \\ plusIsCancellative @1 @n1 @n2
 interpC h@(RecC _ g) (x:::xs)
-    = interpC g $ ((x - 1) ::: xs) `snoc` (interpC h $ (x - 1) ::: xs)
+    = interpC g $ ((x - 1) ::: xs) `snoc` interpC h ((x - 1) ::: xs)
 
 const'C :: forall n. (KnownNat n) => PRFunC (1 + n)
 const'C = ProjC (Proxy @0)
@@ -97,12 +97,12 @@ infixr 3 :::
 instance (KnownNat n) => IsList (Vector n a) where
     type Item (Vector n a) = a
     fromList xs
-        | length xs == (fromIntegral $ natVal $ Proxy @n) = unsafeCoerce xs
+        | length xs == fromIntegral (natVal $ Proxy @n) = unsafeCoerce xs
         | otherwise = error "Don't call fromList like an idiot!"
     toList = Data.Foldable.toList
 
 instance (KnownNat n, Show a) => Show (Vector n a) where
-    show xs = (show $ natVal $ Proxy @n) ++ " [" ++ (intercalate "," $ toList $ fmap show xs) ++ "]"
+    show xs = show (natVal $ Proxy @n) ++ " [" ++ intercalate "," (toList $ fmap show xs) ++ "]"
 
 instance Functor (Vector n) where
     fmap _ Nil        = Nil

@@ -46,3 +46,21 @@ type family Snd (tup :: (k, p)) :: p where
 curry :: f -> HList (Fst (Split f)) -> Snd (Split f)
 curry f Nil        = unsafeCoerce f
 curry f (x ::: xs) = unsafeCoerce $ curry (unsafeCoerce f x) (unsafeCoerce xs)
+
+
+type family Args (f :: Type) :: [Type] where
+  Args (a -> b) = a ': Args b
+  Args a = '[]
+
+type family Res (f :: Type) :: Type where
+  Res (_ -> a) = Res a
+  Res a = a
+
+class Function a where
+  curry' :: a -> HList (Args a) -> Res a
+
+instance {-# OVERLAPPABLE #-} Function a where
+  curry' x Nil = unsafeCoerce x
+
+instance Function b => Function (a -> b) where
+  curry' f (x ::: xs) = curry' (f x) xs

@@ -112,3 +112,22 @@ type family Guard (b :: k) (a :: Bool) :: Constraint where
 type family Not (a :: Bool) :: Bool where
   Not True = False
   Not False = True
+
+type family Map (t :: Type -> Type) (xs :: [Type]) :: [Type] where
+  Map _ '[] = '[]
+  Map t (x ': xs) = t x ': Map t xs
+
+-- TODO: add (Map ap args) to the second argument
+class Lift ap a (args :: [Type]) res where
+  lift :: ap a -> HList args -> ap res
+
+instance (Applicative ap, a ~ res) => Lift ap a '[] res where
+  lift x _ = x
+
+instance ( Applicative ap
+         , Lift ap b ts res
+         , (t ': ts) ~ Map ap (Args (a -> b))
+         , res ~ Res (a -> b)
+         )
+         => Lift ap (a -> b) (t ': ts) res where
+  lift f (x ::: xs) = lift (f <*> x) xs

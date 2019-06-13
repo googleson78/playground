@@ -8,6 +8,7 @@
 {-# Language TypeFamilies #-}
 {-# Language RankNTypes #-}
 {-# Language PolyKinds #-}
+{-# Language MultiParamTypeClasses #-}
 
 {-# Language UndecidableInstances #-}
 
@@ -64,3 +65,16 @@ instance {-# OVERLAPPABLE #-} Function a where
 
 instance Function b => Function (a -> b) where
   curry' f (x ::: xs) = curry' (f x) xs
+
+class Function' a (args :: [Type]) (res :: Type) where
+  curry'' :: a -> HList args -> res
+
+instance (a ~ b) => Function' a '[] b where
+  curry'' x Nil = x
+
+instance ( Function' b (Args b) (Res b)
+         , args ~ Args (a -> b)
+         , res ~ Res (a -> b)
+         )
+         => Function' (a -> b) args res where
+  curry'' f (x ::: xs) = curry'' (f x) xs

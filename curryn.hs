@@ -16,7 +16,7 @@ import Prelude hiding (curry)
 
 import Data.Kind
 
-import GHC.TypeLits (TypeError(..))
+import GHC.TypeLits (TypeError, ErrorMessage(..))
 
 import Unsafe.Coerce
 
@@ -82,3 +82,33 @@ instance ( Function' b (Args b) (Res b)
          )
          => Function' (a -> b) args res where
   curry'' f (x ::: xs) = curry'' (f x) xs
+
+class Function'' a (args :: [Type]) (res :: Type) where
+  curry''' :: a -> HList args -> res
+
+-- See note on Function'.
+-- We also have a guard here because otherwise we would also match
+-- things like `curry (&&) Nil`
+instance ( a ~ b
+         , Guard b (Not (HasArgs b))
+         ) => Function'' a '[] b where
+  curry''' x Nil = x
+
+instance ( Function'' b (Args b) (Res b)
+         , (t ': args) ~ Args (a -> b)
+         , res ~ Res (a -> b)
+         )
+         => Function'' (a -> b) (t ': args) res where
+  curry''' f (x ::: xs) = curry''' (f x) xs
+
+type family HasArgs (t :: Type) :: Bool where
+  HasArgs (_ -> _) = True
+  HasArgs _ = False
+
+type family Guard (b :: k) (a :: Bool) :: Constraint where
+  Guard b False = TypeError (Text "You gave (" :<>: ShowType b :<>: Text ") but me no like.")
+  Guard _ True = ()
+
+type family Not (a :: Bool) :: Bool where
+  Not True = False
+  Not False = True

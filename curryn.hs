@@ -69,6 +69,10 @@ instance Function b => Function (a -> b) where
 class Function' a (args :: [Type]) (res :: Type) where
   curry'' :: a -> HList args -> res
 
+-- if we don't "catch all" here with the a b instance head
+-- we would need to write out explicit types for
+-- curry'' True Nil (so `curry'' True Nil :: Bool`, for example)
+-- because Haskell doesn't know that you want the a [] a instance specifically
 instance (a ~ b) => Function' a '[] b where
   curry'' x Nil = x
 

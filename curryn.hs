@@ -23,7 +23,7 @@ import GHC.Exts (IsList(..))
 
 data HList :: [Type] -> Type where
   Nil :: HList '[]
-  (:::) :: a -> HList ts -> HList (a ': ts)
+  (:::) :: t -> HList ts -> HList (t ': ts)
 
 infixr 5 :::
 

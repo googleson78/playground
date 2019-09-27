@@ -65,3 +65,14 @@ interp (rec f g) (suc x ,- xs) = interp g (x ,- (interp (rec f g) (x ,- xs)) ,- 
 
 add : PrimitiveRec 2
 add = rec (proj 0) (comp suc (proj 1 ,- nil))
+
+data _==_ {X : Set} (x : X) : X -> Set where
+  refl : x == x
+
+infix 2 _==_
+
+{-# BUILTIN EQUALITY _==_ #-}
+
+add-is-+ : (n m : Nat) -> interp add (n ,- m ,- nil) == n + m
+add-is-+ zero m = refl
+add-is-+ (suc n) m rewrite add-is-+ n m = refl

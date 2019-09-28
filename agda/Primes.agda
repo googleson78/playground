@@ -10,6 +10,9 @@ data Nat : Set where
 
 data Zero : Set where
 
+naughty : {X : Set} -> Zero -> X
+naughty ()
+
 record One : Set where
   constructor <>
 
@@ -21,6 +24,8 @@ data _==_ {X : Set} (x : X) : X -> Set where
   refl : x == x
 
 {-# BUILTIN EQUALITY _==_ #-}
+
+infix 2 _==_
 
 ap : {X Y : Set} {x y : X} (f : X -> Y) -> x == y -> f x == f y
 ap f refl = refl
@@ -46,6 +51,8 @@ record Sg (X : Set) (P : X -> Set) : Set where
 _*_ : Set -> Set -> Set
 X * Y = Sg X \ _ -> Y
 
+infixr 4 _*_
+
 reverse : {X : Set} -> List X -> List X
 reverse xs = help xs []
   where
@@ -60,6 +67,10 @@ map f (x ,- xs) = f x ,- map f xs
 _+_ : Nat -> Nat -> Nat
 zero + m = m
 suc n + m = suc (n + m)
+
++zeroId : (n : Nat) -> n + 0 == n
++zeroId zero = refl
++zeroId (suc n) rewrite +zeroId n = refl
 
 data _<=_ : Nat -> Nat -> Set where
   or : {n : Nat} -> n <= n
@@ -96,3 +107,34 @@ fromTo : Nat -> Nat -> List Nat
 fromTo n m with leqNat n m
 fromTo n m | yes p = reverse (fromTo' p)
 fromTo n m | no _ = []
+
+foldl : {X Y : Set} -> (Y -> X -> Y) -> Y -> List X -> Y
+foldl f v [] = v
+foldl f v (x ,- xs) = foldl f (f v x) xs
+
+scanl : {X Y : Set} -> (Y -> X -> Y) -> Y -> List X -> List Y
+scanl f v [] =  v ,- []
+scanl f v (x ,- xs) = v ,- scanl f (f v x) xs
+
+replicate : {X : Set} -> Nat -> X -> List X
+replicate zero x = []
+replicate (suc n) x = x ,- replicate n x
+
+_-_ : Nat -> Nat -> Nat
+zero - m = zero
+suc n - zero = suc n
+suc n - suc m = n - m
+
+fromTo'' : (n m : Nat) -> List Nat
+fromTo'' n m = map (n +_) (scanl _+_ 0 (replicate (m - n) 1))
+
+All : {X : Set} (P : X -> Set) -> List X -> Set
+All P [] = One
+All P (x ,- xs) = P x * All P xs
+
+-- good luck
+leqMax : (n m : Nat) -> All (\ k -> n <= k * k <= m) (fromTo'' n m)
+leqMax zero zero = (or , or) , <>
+leqMax zero (suc m) = (or , (o' (oz m))) , {!!}
+leqMax (suc n) zero = {!!}
+leqMax (suc n) (suc m) = {!!}

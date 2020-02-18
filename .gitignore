@@ -3,3 +3,4 @@
 *.agdai
 *.agda.vim
 .stack-work
+parse-lambda-deterministic/lambda-parser.cabal

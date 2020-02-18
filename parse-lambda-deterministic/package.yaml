@@ -1,0 +1,27 @@
+name:                lambda-parser
+version:             1.3.3.7
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+
+ghc-options:
+- -Wall
+- -Werror
+- -Wincomplete-uni-patterns
+
+tests:
+  tests:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - lambda-parser
+    - QuickCheck
+    - hspec
+    - hspec-discover

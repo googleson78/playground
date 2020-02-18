@@ -2,3 +2,4 @@
 *.swo
 *.agdai
 *.agda.vim
+.stack-work

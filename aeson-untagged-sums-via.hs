@@ -25,3 +25,12 @@ instance (GFromJSON Zero (Rep a), Generic a) => FromJSON (Untagged a) where
 
 instance (Generic a, (GToJSON Zero (Rep a))) => ToJSON (Untagged a) where
   toJSON = genericToJSON untaggedOptions . getUntagged
+
+-- > encode $ BoolParam True
+-- "true"
+-- > encode $ StringParam "lol"
+-- "\"lol\""
+-- > decode "true" :: Maybe Param
+-- Just (BoolParam True)
+-- > decode "\"true\"" :: Maybe Param
+-- Just (StringParam "true")

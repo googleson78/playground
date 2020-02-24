@@ -17,3 +17,12 @@ instance FromJSON Param where
 
 instance ToJSON Param where
   toJSON = genericToJSON untaggedOptions
+
+-- > encode $ StringParam "lol"
+-- "\"lol\""
+-- > encode $ BoolParam True
+-- "true"
+-- > decode "true" :: Maybe Param
+-- Just (BoolParam True)
+-- > decode "\"true\"" :: Maybe Param
+-- Just (StringParam "true")

@@ -1,22 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
--- ^ allows us to write
---
--- \case
---   Nothing -> ...
---   Just y -> ...
---
--- instead of
---
--- \x -> case x of
---   Nothing -> ...
---   Just y -> ...
-
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}     -- cover all cases!
-{-# OPTIONS_GHC -fwarn-unused-matches #-}          -- use all your pattern matches!
-{-# OPTIONS_GHC -fwarn-missing-signatures #-}      -- write all your toplevel signatures!
-{-# OPTIONS_GHC -fwarn-name-shadowing #-}          -- use different names!
-{-# OPTIONS_GHC -fwarn-incomplete-uni-patterns #-} -- warn about incomplete patterns v2
 
 module Parser
   ( Parser(..), parse
